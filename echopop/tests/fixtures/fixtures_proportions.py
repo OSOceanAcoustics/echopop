@@ -167,7 +167,6 @@ def aged_dataframe():
 @pytest.fixture
 def aged_dataarray(aged_dataframe):
     """Create sample aged count data with stratum, length, age, and sex."""
-
     dat_da = aged_dataframe.set_index(["stratum_num", "length_bin", "age_bin", "sex"])[
         "count"
     ].to_xarray()
@@ -191,7 +190,6 @@ def unaged_dataframe():
 @pytest.fixture
 def unaged_dataarray(unaged_dataframe):
     """Create sample aged count data with stratum, length, age, and sex."""
-
     dat_da = unaged_dataframe.set_index(["stratum_num", "length_bin", "sex"])["count"].to_xarray()
     dat_da = dat_da.assign_coords({"variable": "count"})
 
@@ -314,8 +312,7 @@ def proportion_dict():
             "stratum_num": [1, 1, 1, 2, 2, 2],
             "sex": ["female", "male", "male", "female", "male", "female"],
             "length_bin": ["(10, 20]", "(10, 20]", "(20, 30]", "(10, 20]", "(20, 30]", "(20, 30]"],
-            "proportion": [0.3, 0.4, 0.1, 0.05, 0.15, 0.1],
-            "proportion_overall": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
+            "proportion": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
         }
     )
 
@@ -325,8 +322,7 @@ def proportion_dict():
             "stratum_num": [1, 1, 1, 2, 2, 2],
             "sex": ["female", "male", "male", "female", "male", "female"],
             "length_bin": ["(10, 20]", "(10, 20]", "(20, 30]", "(10, 20]", "(20, 30]", "(20, 30]"],
-            "proportion": [0.25, 0.35, 0.2, 0.1, 0.2, 0.1],
-            "proportion_overall": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
+            "proportion": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
         }
     )
 
@@ -362,8 +358,7 @@ def proportion_test_dict():
                     "(20, 30]",
                     "(20, 30]",
                 ],
-                "proportion": [0.3, 0.4, 0.1, 0.05, 0.15, 0.1],
-                "proportion_overall": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
+                "proportion": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
             }
         )
         .set_index(["stratum_num", "sex", "length_bin"])
@@ -384,8 +379,7 @@ def proportion_test_dict():
                     "(20, 30]",
                     "(20, 30]",
                 ],
-                "proportion": [0.25, 0.35, 0.2, 0.1, 0.2, 0.1],
-                "proportion_overall": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
+                "proportion": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
             }
         )
         .set_index(["stratum_num", "sex", "length_bin"])
@@ -560,8 +554,7 @@ def proportion_dict_fixture():
             "stratum_num": [1, 1, 2, 2],
             "sex": ["male", "female", "male", "female"],
             "length_bin": [30, 30, 30, 40],
-            "proportion": [0.4, 0.6, 0.5, 0.5],
-            "proportion_overall": [0.3, 0.2, 0.3, 0.2],
+            "proportion": [0.3, 0.2, 0.3, 0.2],
         }
     )
 
@@ -623,7 +616,6 @@ def standardized_data_fixture():
 @pytest.fixture
 def simple_weights_df():
     """Create a simple multi-level column DataFrame with stratum_num in columns."""
-
     # Create simple data with one row
     data = pd.DataFrame(
         {
@@ -716,13 +708,13 @@ def ts_parameters():
 
 @pytest.fixture
 def stratify_by():
-    """Standard stratification columns."""
+    """Return standard stratification columns."""
     return ["stratum_ks"]
 
 
 @pytest.fixture
 def age1_filter():
-    """Standard age-1 inclusion filter."""
+    """Return standard age-1 inclusion filter."""
     return {"age_bin": [1]}
 
 
@@ -734,19 +726,19 @@ def female_filter():
 
 @pytest.fixture
 def length_threshold():
-    """Standard length threshold for testing."""
+    """Return standard length threshold for testing."""
     return 15.0
 
 
 @pytest.fixture
 def weight_threshold():
-    """Standard weight proportion threshold."""
+    """Return standard weight proportion threshold."""
     return 1e-10
 
 
 @pytest.fixture
 def number_proportions_dict(number_proportions_data):
-    """Dictionary of number proportions (aged/unaged format)."""
+    """Return a dictionary of number proportions (aged/unaged format)."""
     return {
         "aged": number_proportions_data,
         "unaged": number_proportions_data.drop(columns=["age_bin"]),

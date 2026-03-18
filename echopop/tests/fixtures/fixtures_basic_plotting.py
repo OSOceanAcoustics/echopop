@@ -5,6 +5,7 @@ import pytest
 
 @pytest.fixture
 def plotting_mesh_data():
+    """Create sample mesh data for plotting tests."""
     np.random.seed(999)
 
     return pd.DataFrame(
@@ -18,6 +19,7 @@ def plotting_mesh_data():
 
 @pytest.fixture
 def plotting_transect_data():
+    """Create sample transect data for plotting tests."""
     np.random.seed(999)
     df = pd.DataFrame(
         {
@@ -32,6 +34,7 @@ def plotting_transect_data():
 
 @pytest.fixture
 def plotting_heatmap_data():
+    """Create sample heatmap data for plotting tests."""
     np.random.seed(999)
     cols = pd.IntervalIndex.from_breaks([0, 1, 2, 3])
     idx = pd.IntervalIndex.from_breaks([10, 20, 30, 40])

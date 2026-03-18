@@ -5,7 +5,7 @@ from echopop.survey import transect
 
 
 def test_get_transect_basic_functionality(basic_nasc_data):
-    """Test basic functionality of transect.compute_interval_distance"""
+    """Test basic functionality of transect.compute_interval_distance."""
     transect.compute_interval_distance(basic_nasc_data)
 
     # Check that distance_interval column was added
@@ -26,7 +26,7 @@ def test_get_transect_basic_functionality(basic_nasc_data):
 
 
 def test_get_transect_single_row(transect_single_row):
-    """Test transect.compute_interval_distance with single row DataFrame"""
+    """Test transect.compute_interval_distance with single row DataFrame."""
     transect.compute_interval_distance(transect_single_row)
 
     # Check that distance_interval column was added
@@ -38,7 +38,7 @@ def test_get_transect_single_row(transect_single_row):
 
 
 def test_get_transect_preserves_original(basic_nasc_data):
-    """Test that original DataFrame is not modified"""
+    """Test that original DataFrame is not modified."""
     original_columns = basic_nasc_data.columns.tolist()
     transect.compute_interval_distance(basic_nasc_data)
 
@@ -50,7 +50,7 @@ def test_get_transect_preserves_original(basic_nasc_data):
 
 
 def test_get_transect_irregular_spacing(irregular_spacing_data):
-    """Test transect.compute_interval_distance with irregular spacing"""
+    """Test transect.compute_interval_distance with irregular spacing."""
     transect.compute_interval_distance(irregular_spacing_data)
 
     # Check that distance_interval column was added
@@ -69,7 +69,7 @@ def test_get_transect_irregular_spacing(irregular_spacing_data):
 
 
 def test_get_transect_empty_dataframe():
-    """Test transect.compute_interval_distance with empty DataFrame"""
+    """Test transect.compute_interval_distance with empty DataFrame."""
     empty_df = pd.DataFrame(columns=["distance_s", "distance_e", "transect_spacing"])
 
     with pytest.raises(IndexError):
@@ -77,7 +77,7 @@ def test_get_transect_empty_dataframe():
 
 
 def test_get_transect_missing_columns():
-    """Test transect.compute_interval_distance with missing required columns"""
+    """Test transect.compute_interval_distance with missing required columns."""
     incomplete_df = pd.DataFrame({"distance_s": [1, 2, 3]})
 
     with pytest.raises(KeyError):

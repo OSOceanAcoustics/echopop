@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_kriged_mesh_types(plotting_mesh_data):
-
+    """Test that plot_kriged_mesh works with all valid plot types."""
     # Hexbin (implicit)
     egra.plot_kriged_mesh(plotting_mesh_data, "biomass")
 
@@ -25,15 +25,18 @@ def test_plot_kriged_mesh_types(plotting_mesh_data):
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_kriged_mesh_invalid(plotting_mesh_data):
+    """Test that plot_kriged_mesh raises ValueError for invalid plot type."""
     with pytest.raises(ValueError):
         egra.plot_kriged_mesh(plotting_mesh_data, "biomass", plot_type="not_a_type")
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_transect_map(plotting_transect_data):
+    """Test that plot_transect_map runs without error."""
     egra.plot_transect_map(plotting_transect_data, "biomass")
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_age_length_heatmap(plotting_heatmap_data):
+    """Test that plot_age_length_heatmap runs without error."""
     egra.plot_age_length_heatmap(plotting_heatmap_data)

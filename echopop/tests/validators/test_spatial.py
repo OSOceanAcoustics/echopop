@@ -1,3 +1,5 @@
+"""Tests for spatial validators."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -15,7 +17,6 @@ from echopop.validators.spatial import (
 # -----------
 def test_mesh_df_valid_lon_lat():
     """Test MeshDF with valid longitude/latitude coordinates."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.5, -123.0],
@@ -30,7 +31,6 @@ def test_mesh_df_valid_lon_lat():
 
 def test_mesh_df_valid_x_y():
     """Test MeshDF with valid x/y coordinates."""
-
     df = pd.DataFrame({"x": [0.0, 1.0, 2.0], "y": [0.0, 1.0, 2.0], "fraction": [0.1, 0.15, 0.12]})
 
     result = MeshDF.validate(df)
@@ -39,7 +39,6 @@ def test_mesh_df_valid_x_y():
 
 def test_mesh_df_valid_all_coordinates():
     """Test MeshDF with all coordinate types."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.5, -123.0],
@@ -57,7 +56,6 @@ def test_mesh_df_valid_all_coordinates():
 
 def test_mesh_df_invalid_longitude():
     """Test MeshDF with invalid longitude values."""
-
     df = pd.DataFrame(
         {
             "longitude": [-200.0, -123.5, -123.0],  # Invalid: < -180
@@ -72,7 +70,6 @@ def test_mesh_df_invalid_longitude():
 
 def test_mesh_df_invalid_latitude():
     """Test MeshDF with invalid latitude values."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.5, -123.0],
@@ -87,7 +84,6 @@ def test_mesh_df_invalid_latitude():
 
 def test_mesh_df_missing_coordinate_pairs():
     """Test MeshDF with missing coordinate pairs."""
-
     # Missing latitude
     df = pd.DataFrame({"longitude": [-124.0, -123.5, -123.0], "area": [1.5, 2.0, 1.8]})
 
@@ -103,7 +99,6 @@ def test_mesh_df_missing_coordinate_pairs():
 
 def test_mesh_df_missing_area_fraction():
     """Test MeshDF with missing area and fraction columns."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.5, -123.0],
@@ -118,7 +113,6 @@ def test_mesh_df_missing_area_fraction():
 
 def test_mesh_df_type_coercion():
     """Test MeshDF with type coercion."""
-
     df = pd.DataFrame(
         {
             "longitude": ["-124.0", "-123.5", "-123.0"],  # String values
@@ -138,7 +132,6 @@ def test_mesh_df_type_coercion():
 # ----------------
 def test_transects_df_valid_lon_lat():
     """Test TransectsDF with valid longitude/latitude coordinates."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8, -123.6, -123.4],
@@ -153,7 +146,6 @@ def test_transects_df_valid_lon_lat():
 
 def test_transects_df_valid_x_y():
     """Test TransectsDF with valid x/y coordinates."""
-
     df = pd.DataFrame(
         {
             "x": [0.0, 1.0, 2.0, 3.0],
@@ -168,7 +160,6 @@ def test_transects_df_valid_x_y():
 
 def test_transects_df_invalid_longitude():
     """Test TransectsDF with invalid longitude values."""
-
     df = pd.DataFrame(
         {
             "longitude": [-200.0, -123.8, -123.6, -123.4],  # Invalid: < -180
@@ -183,7 +174,6 @@ def test_transects_df_invalid_longitude():
 
 def test_transects_df_invalid_latitude():
     """Test TransectsDF with invalid latitude values."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8, -123.6, -123.4],
@@ -198,7 +188,6 @@ def test_transects_df_invalid_latitude():
 
 def test_transects_df_missing_coordinate_pairs():
     """Test TransectsDF with missing coordinate pairs."""
-
     # Missing latitude
     df = pd.DataFrame(
         {"longitude": [-124.0, -123.8, -123.6, -123.4], "biomass_density": [10.5, 15.2, 12.8, 18.1]}
@@ -216,7 +205,6 @@ def test_transects_df_missing_coordinate_pairs():
 
 def test_transects_df_type_coercion():
     """Test TransectsDF with type coercion."""
-
     df = pd.DataFrame(
         {
             "longitude": ["-124.0", "-123.8", "-123.6", "-123.4"],  # String values
@@ -235,7 +223,6 @@ def test_transects_df_type_coercion():
 # -------------------------
 def test_validate_hull_crop_args_valid():
     """Test ValidateHullCropArgs with valid arguments."""
-
     transects_df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8, -123.6, -123.4],
@@ -271,7 +258,6 @@ def test_validate_hull_crop_args_valid():
 
 def test_validate_hull_crop_args_invalid_num_nearest():
     """Test ValidateHullCropArgs with invalid num_nearest_transects."""
-
     transects_df = pd.DataFrame(
         {"longitude": [-124.0, -123.8], "latitude": [46.0, 46.2], "biomass_density": [10.5, 15.2]}
     )
@@ -293,7 +279,6 @@ def test_validate_hull_crop_args_invalid_num_nearest():
 
 def test_validate_hull_crop_args_invalid_buffer_distance():
     """Test ValidateHullCropArgs with invalid mesh_buffer_distance."""
-
     transects_df = pd.DataFrame(
         {"longitude": [-124.0, -123.8], "latitude": [46.0, 46.2], "biomass_density": [10.5, 15.2]}
     )
@@ -315,7 +300,6 @@ def test_validate_hull_crop_args_invalid_buffer_distance():
 
 def test_validate_hull_crop_args_projection_validation():
     """Test ValidateHullCropArgs projection field validation."""
-
     transects_df = pd.DataFrame(
         {"longitude": [-124.0, -123.8], "latitude": [46.0, 46.2], "biomass_density": [10.5, 15.2]}
     )
@@ -341,7 +325,6 @@ def test_validate_hull_crop_args_projection_validation():
 
 def test_validate_hull_crop_args_invalid_projection():
     """Test ValidateHullCropArgs with invalid projection format."""
-
     transects_df = pd.DataFrame(
         {"longitude": [-124.0, -123.8], "latitude": [46.0, 46.2], "biomass_density": [10.5, 15.2]}
     )
@@ -363,7 +346,6 @@ def test_validate_hull_crop_args_invalid_projection():
 
 def test_validate_hull_crop_args_invalid_transects():
     """Test ValidateHullCropArgs with invalid transects DataFrame."""
-
     # Invalid transects (missing coordinates)
     transects_df = pd.DataFrame({"biomass_density": [10.5, 15.2]})
 
@@ -384,7 +366,6 @@ def test_validate_hull_crop_args_invalid_transects():
 
 def test_validate_hull_crop_args_invalid_mesh():
     """Test ValidateHullCropArgs with invalid mesh DataFrame."""
-
     transects_df = pd.DataFrame(
         {"longitude": [-124.0, -123.8], "latitude": [46.0, 46.2], "biomass_density": [10.5, 15.2]}
     )
@@ -408,7 +389,6 @@ def test_validate_hull_crop_args_invalid_mesh():
 # -----------------
 def test_spatial_validators_integration():
     """Test integration of spatial validators."""
-
     # Create valid test data
     transects_df = pd.DataFrame(
         {

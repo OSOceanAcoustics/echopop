@@ -1,6 +1,14 @@
+"""
+Interactive ipywidgets-based GUI for variogram model fitting and parameter exploration.
+
+Provides a Jupyter-compatible widget panel that lets users adjust variogram model parameters
+(nugget, sill, range, family, etc.) and immediately preview the resulting theoretical variogram
+curve against the empirical semi-variogram cloud.
+"""
+
 import ast
 import traceback
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 import holoviews as hv
 import ipywidgets as ipw
@@ -129,15 +137,15 @@ DEFAULT_VARIOGRAM_PARAMETERS = {
 
 def md_to_HTML(
     text: str,
-    type: Optional[Literal["fail", "status", "success"]] = None,
-    ipywidget_obj: Optional[ipw.HTML] = None,
+    type: Literal["fail", "status", "success"] | None = None,
+    ipywidget_obj: ipw.HTML | None = None,
 ):
     """
-    Helper function that converts text and regular expressions from a markdown format to a
-    `ipywidgets.HTML` text object. When an `ipywidgets.HTML` object is supplied, then the text is
-    stored directly into the 'value' attribute of that object.
-    """
+    Convert text and regular expressions from markdown format to an ``ipywidgets.HTML`` object.
 
+    When an ``ipywidgets.HTML`` object is supplied, the text is stored directly into the
+    ``'value'`` attribute of that object.
+    """
     # Get background color
     if type:
         if type == "fail":
@@ -166,6 +174,7 @@ def md_to_HTML(
 # Instructions tab
 # ----------------
 def instructions_tab(obj):
+    """Build and return the instructions accordion tab widget for the variogram GUI."""
     instructions_text = f"""
 # <u>Variogram Analysis Interactive GUI</u>
 
@@ -416,7 +425,7 @@ class VariogramGUI:
         lag_resolution: float,
         n_lags: int,
         coordinates: tuple,
-        variogram_parameters: Dict[str, Any] = {},
+        variogram_parameters: dict[str, Any] | None = None,
     ):
 
         # Initialize extension
@@ -434,7 +443,7 @@ class VariogramGUI:
         )
 
         # Store input variogram parameters that will be used as defaults
-        self.variogram_parameters = variogram_parameters
+        self.variogram_parameters = variogram_parameters or {}
 
         # Initialize the `lmfit.Parameters` and parameter widgets attributes
         self.parameters_lmfit = Parameters()
@@ -465,11 +474,11 @@ class VariogramGUI:
 
     def _setup_gui(self):
         """
-        Generate the tabs and overall display for the GUI. These will create both the general
-        tabs for each component as well as storing each tab as individual attributes for
-        debugging purposes.
-        """
+        Generate the tabs and overall display for the GUI.
 
+        Creates both the general tabs for each component and stores each tab as individual
+        attributes for debugging purposes.
+        """
         # Instructions tab [TAB 1]
         self.instructions_tab = instructions_tab(self)
 
@@ -521,22 +530,20 @@ class VariogramGUI:
 
     @property
     def optimized_parameters(self):
-        """
-        Return the best-fit, optimized variogram parameters
-        """
+        """Return the best-fit, optimized variogram parameters."""
         return self.optimization_results["optimized_parameters"]
 
     def _ipython_display_(self):
         """
-        Integrate GUI into IPython without needing to create a separate property or 'get'
-        method. This enables the usage of just `VariogramGUI(...)` to instantiate a session.
+        Integrate the GUI into IPython for inline display.
+
+        Enables the usage of just ``VariogramGUI(...)`` to instantiate a session without needing to
+        create a separate property or ``'get'`` method.
         """
         display(self.tabs)
 
     def _clear_plot(self):
-        """
-        Clear the plotting pane
-        """
+        """Clear the plotting pane."""
         # Clear the output
         with self.plot_output:
             clear_output(wait=True)
@@ -546,10 +553,7 @@ class VariogramGUI:
             self.plot_layers[key] = None
 
     def _clear_downstream_layers(self, from_layer):
-        """
-        Clear all layers after a given layer in the hierarchy.
-        """
-
+        """Clear all layers after a given layer in the hierarchy."""
         # Get the layer order
         layer_order = list(self.plot_layers.keys())
 
@@ -560,10 +564,7 @@ class VariogramGUI:
                 self.plot_layers[layer] = None
 
     def _update_plot_display(self):
-        """
-        Update the plot displayed based on the current plot state.
-        """
-
+        """Update the plot displayed based on the current plot state."""
         with self.plot_output:
             # Clear the plot
             clear_output(wait=True)
@@ -583,10 +584,7 @@ class VariogramGUI:
                 display(self.overlay_dmap)
 
     def _update_model_parameters(self, change):
-        """
-        Dynamically update the displayed variogram model parameter widgets.
-        """
-
+        """Dynamically update the displayed variogram model parameter widgets."""
         # Get the new model name
         model_name = change["new"]
 
@@ -685,9 +683,11 @@ class VariogramGUI:
 
     def _update_optimization_parameters(self):
         """
-        Create optimization parameter widgets based on the current theoretical model parameters.
-        """
+        Create model optimization parameter fields.
 
+        Create optimization parameter widgets based on the current theoretical model
+        parameters.
+        """
         with self.optimization_parameter_output:
             clear_output(wait=True)
 
@@ -816,11 +816,11 @@ class VariogramGUI:
 
     def initialize_tab(self):
         """
-        Tab for initializing the empirical variogram calculation. This allows for overriding
-        the initial inputs for 'n_lags' and 'lag_resolution'. The column names defined via
-        'coordinates' remain static.
-        """
+        Build the empirical variogram initialization tab.
 
+        Allows for overriding the initial inputs for ``'n_lags'`` and ``'lag_resolution'``. The
+        column names defined via ``'coordinates'`` remain static.
+        """
         # Input widgets
         # ---- Lag resolution
         lag_resolution_input = ipw.BoundedFloatText(
@@ -881,10 +881,11 @@ class VariogramGUI:
 
     def initialize_variogram(self, button):
         """
-        When the variogram initializatio button is clicked, a `Variogram`-class instance will
-        be initialized that enables downstream empirical and theoretical variogram computations.
-        """
+        Initialize the variogram when the initialization button is clicked.
 
+        Creates a ``Variogram``-class instance that enables downstream empirical and theoretical
+        variogram computations.
+        """
         try:
             # Get entered inputs
             lag_resolution = self.initialization_widgets["lag_resolution"].value
@@ -927,10 +928,7 @@ class VariogramGUI:
             )
 
     def empirical_tab(self):
-        """
-        Tab for calculating and visualizing the empirical variogram based on user inputs.
-        """
-
+        """Tab for calculating and visualizing the empirical variogram based on user inputs."""
         # Input widgets
         # ---- Variable selection
         variable_select = ipw.Dropdown(
@@ -1003,10 +1001,7 @@ class VariogramGUI:
         return ipw.VBox([variable_select_box, azimuth_input_box, VSPACER, computation_button])
 
     def empirical_variogram(self, button):
-        """
-        Calculate the empirical variogram using the updated widget inputs.
-        """
-
+        """Calculate the empirical variogram using the updated widget inputs."""
         # Disable button
         button.disabled = True
 
@@ -1107,10 +1102,11 @@ class VariogramGUI:
 
     def plot_empirical_variogram(self):
         """
-        Plot the empirical variogram. This is a scatter plot at each defined lag distance where
-        the size of each point scales with the lag counts at each point.
-        """
+        Plot the empirical variogram.
 
+        Renders a scatter plot at each defined lag distance where the size of each point scales
+        with the lag counts at each point.
+        """
         # Extract variables
         lags = self.empirical_results["lags"]
         gamma = self.empirical_results["gamma"]
@@ -1180,10 +1176,7 @@ class VariogramGUI:
         return variogram_scatter
 
     def theoretical_tab(self):
-        """
-        Tab for calculating and visualizing the initial theoretical variogram based on user inputs.
-        """
-
+        """Build the theoretical variogram tab for calculating and visualizing the initial fit."""
         # Initialize the Output container
         self.parameter_output = ipw.Output()
 
@@ -1225,10 +1218,7 @@ class VariogramGUI:
         return tab_output
 
     def theoretical_variogram(self, button):
-        """
-        Compute the theoretical variogram using the updated widget inputs.
-        """
-
+        """Compute the theoretical variogram using the updated widget inputs."""
         # Disable button
         button.disabled = True
 
@@ -1323,10 +1313,11 @@ class VariogramGUI:
 
     def plot_theoretical_variogram(self):
         """
-        Plot the theoretical variogram. This is a line curve that fits the modeled semivariance
-        predictions to the empirical variogram domain.
-        """
+        Plot the theoretical variogram.
 
+        Renders a line curve that fits the modeled semivariance predictions to the empirical
+        variogram domain.
+        """
         # Extract variables
         lags = self.theoretical_results["lags"]
         gamma = self.theoretical_results["gamma"]
@@ -1348,7 +1339,7 @@ class VariogramGUI:
         return variogram_curve
 
     def optimization_tab(self):
-
+        """Build and return the variogram parameter optimization tab widget."""
         # Initialize the optimization parameter widgets containers
         self.optimization_parameter_output = ipw.Output()
         self.optimization_parameter_widgets = {}
@@ -1424,7 +1415,7 @@ class VariogramGUI:
         return tab_output
 
     def optimize_variogram(self, button):
-
+        """Run the variogram parameter optimization when the optimize button is clicked."""
         # Disable button
         button.disabled = True
 
@@ -1585,10 +1576,7 @@ class VariogramGUI:
             button.disabled = False
 
     def plot_optimized_variogram(self):
-        """
-        Plot the optimized theoretical variogram.
-        """
-
+        """Plot the optimized theoretical variogram."""
         # Create DataFrame
         plot_data = pd.DataFrame(
             {

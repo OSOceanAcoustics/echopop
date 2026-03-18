@@ -300,9 +300,7 @@ def invalid_length_distribution():
 
 @pytest.fixture
 def nasc_data_simple():
-    """
-    Basic NASC data matching the real usage pattern.
-    """
+    """Return basic NASC data matching the real usage pattern."""
     return pd.DataFrame(
         {
             "number_density": [100.0, 200.0, 150.0, 75.0],
@@ -314,15 +312,11 @@ def nasc_data_simple():
 
 @pytest.fixture
 def average_weight_series():
-    """
-    Average weight as a Series indexed by stratum_ks (real usage pattern).
-    """
+    """Average weight as a Series indexed by stratum_ks (real usage pattern)."""
     return pd.Series([0.4, 0.6], index=[1, 2], name="avg_weight")
 
 
 @pytest.fixture
 def scalar_weight():
-    """
-    Scalar weight value.
-    """
+    """Scalar weight value."""
     return 0.5

@@ -14,7 +14,7 @@ def sample_mesh_data_with_lonlat():
 
     mesh_points = []
     for i, lon in enumerate(lon_range):
-        for j, lat in enumerate(lat_range):
+        for _j, lat in enumerate(lat_range):
             mesh_points.append(
                 {"longitude": lon, "latitude": lat, "transect_num": i % 5}  # Some transect numbers
             )
@@ -68,7 +68,7 @@ def sample_mesh_data_xy():
 
     mesh_points = []
     for i, x in enumerate(x_range):
-        for j, y in enumerate(y_range):
+        for _j, y in enumerate(y_range):
             mesh_points.append({"x": x, "y": y, "transect_num": i % 5})
 
     return pd.DataFrame(mesh_points)

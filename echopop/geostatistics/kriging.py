@@ -1,7 +1,15 @@
+"""
+Ordinary kriging implementation and search-strategy utilities for spatial interpolation.
+
+Implements isotropic and anisotropic ordinary kriging, local-search neighbourhood
+selection, and the assembly of kriging weight systems from fitted variogram models.
+"""
+
 import inspect
 import warnings
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -26,11 +34,13 @@ def uniform_search_strategy(
     oos_indices: np.ndarray[np.number],
     oos_weights: np.ndarray[float],
     **kwargs,
-) -> Tuple[np.ndarray[np.number], np.ndarray[np.number], np.ndarray[np.number]]:
+) -> tuple[np.ndarray[np.number], np.ndarray[np.number], np.ndarray[np.number]]:
     """
+    Uniform nearest neighbors search strategy for ordinary kriging.
+
     Uniform extrapolation search strategy for finding (and weighting) k-th nearest points
     (relative to a reference coordinate) required for computing the lagged semivariogram in an
-    adaptive approach
+    adaptive approach.
 
     Parameters
     ----------
@@ -64,7 +74,6 @@ def uniform_search_strategy(
         search strategy that applies unconstrained and uniform extrapolation to out-of-sample (OOS)
         points.
     """
-
     # Index for areas with some valid points but fewer than k_min
     partial_indices = sparse_radii[valid_distances[sparse_radii] > 0]
 
@@ -154,10 +163,12 @@ def adaptive_search_radius(
     search_radius: float,
     search_strategy: Callable = uniform_search_strategy,
     **kwargs,
-) -> Tuple[np.ndarray, np.ndarray[np.number], np.ndarray[np.number], np.ndarray[float]]:
-    """
+) -> tuple[np.ndarray, np.ndarray[np.number], np.ndarray[np.number], np.ndarray[float]]:
+    r"""
+    Find the indices of the k-th nearest points.
+
     Find the indices of the k-th nearest points (relative to a reference coordinate) required
-    for computing the lagged semivariogram
+    for computing the lagged semivariogram.
 
     Parameters
     ----------
@@ -222,7 +233,6 @@ def adaptive_search_radius(
         out-of-sample (OOS) indices that indicate which points will be extrapolated, and the
         OOS weights applied to values that are extrapolated.
     """
-
     # Generate the search radius mask
     distance_matrix_masked = search_radius_mask(distance_matrix, search_radius)
 
@@ -280,8 +290,10 @@ def adaptive_search_radius(
 def ordinary_kriging_matrix(
     local_distance_matrix: np.ndarray[float], variogram_parameters: dict[str, Any]
 ) -> np.ndarray[float]:
-    """
-    Calculate the kriging covariance matrix
+    r"""
+    Calculate the kriging covariance matrix.
+
+    Calculate thr kriging covariance matrix used for ordinary kriging.
 
     Parameters
     ----------
@@ -340,7 +352,6 @@ def ordinary_kriging_matrix(
 
     The solution yields the kriging weights :math:`\\lambda_i` and the multiplier :math:`\\mu`.
     """
-
     # Calculate the covariance/kriging matrix (without the constant term)
     kriging_matrix_initial = vgm.compute_variogram(
         distance_lags=local_distance_matrix, variogram_parameters=variogram_parameters
@@ -368,7 +379,9 @@ def kriging_lambda(
     lagged_semivariogram: np.ndarray,
     kriging_covariance_matrix: np.ndarray,
 ):
-    """
+    r"""
+    Solve the kriging system.
+
     Solve the Kriging system (set of linear equations) using a truncated singular value
     decomposition (SVD) of the kriging covariance matrix.
 
@@ -439,7 +452,6 @@ def kriging_lambda(
 
     where :math:`\\mathbf{k}` is the lagged semivariogram vector to the target location.
     """
-
     # Singular value decomposition (SVD)
     # ---- U: left singular vectors (directions of maximum variance)
     # ---- Sigma: singular values (amount of variance captured by each singular vector, U)
@@ -463,9 +475,12 @@ def kriging_lambda(
 
 def parse_stacked_kriging_array(
     stacked_array: np.ndarray[np.number], k_min: int, k_max: int, **kwargs
-) -> Tuple[np.ndarray[float], np.ndarray[int], np.ndarray[float], np.ndarray[float]]:
+) -> tuple[np.ndarray[float], np.ndarray[int], np.ndarray[float], np.ndarray[float]]:
     """
-    Helper function for parsing the horizontally stacked array when interpolating points via kriging
+    Parse the horizontally stacked kriged arrays.
+
+    Helper function for parsing the horizontally stacked array when interpolating points via
+    kriging.
 
     Parameters
     ----------
@@ -487,7 +502,6 @@ def parse_stacked_kriging_array(
         either interpolated or extrapolated, the local lagged semivariogram, and the range distance
         values.
     """
-
     # Break up the stacked index
     # ---- Extrapolation/out-of-sample (OOS) weight
     outside_weight = stacked_array[0]
@@ -511,52 +525,75 @@ def parse_stacked_kriging_array(
 def kriging_point_estimator(
     kriging_array: np.ndarray[np.number],
     data_array: np.ndarray[float],
-    kriging_parameters: Dict[str, Any],
-    variogram_parameters: Dict[str, Any],
+    kriging_parameters: dict[str, Any],
+    variogram_parameters: dict[str, Any],
 ) -> np.ndarray[float]:
-    """
-    Interpolate value at a specified point via kriging
+    r"""
+    Interpolate kriged estimates.
+
+    Interpolate value at a specified point via kriging.
 
     Parameters
     ----------
     kriging_array: |np.ndarray[np.number]|
         Horizontally stacked 1D array containing kriging indices and local semivariogram values.
         Expected to include:
-        - Outside weight scalar,
-        - Within- and out-of-sample indices,
-        - Lagged semivariogram values (M2),
-        - Local range estimates.
+
+        - Outside weight scalar
+
+        - Within- and out-of-sample indices
+
+        - Lagged semivariogram values (M2)
+
+        - Local range estimates
+
     data_array: |np.ndarray[float]|
         A 2D array of shape (n, 3), where columns represent [x-coordinates, y-coordinate,
         variable].
     kriging_parameters: dict
         Dictionary of kriging parameters, must contain keys:
-        - 'k_min' (int): minimum number of neighbors,
-        - 'k_max' (int): maximum number of neighbors,
-        - 'search_radius' (float): radius to consider neighbors,
+
+        - 'k_min' (int): minimum number of neighbors
+
+        - 'k_max' (int): maximum number of neighbors
+
+        - 'search_radius' (float): radius to consider neighbors
+
         - 'aspect_ratio' (float): ratio of the correlation range along the minor axis to major axis
-        in the principal direction of anisotropy,
+          in the principal direction of anisotropy
+
     variogram_parameters : Dict[str, Any]
         Dictionary describing the variogram model and parameters, such as:
-        - 'model' (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
-        - 'nugget' (float): nugget effect,
-        - 'sill' (float): sill parameter,
-        - 'correlation_range' (float): range parameter,
-        - 'hole_effect_range' (float): hole effect range,
-        - 'decay_power' (float): power parameter for power variogram.
+
+        - 'model' (str or list of str): variogram model names (e.g., 'bessel', 'exponential')
+
+        - 'nugget' (float): nugget effect
+
+        - 'sill' (float): sill parameter
+
+        - 'correlation_range' (float): range parameter
+
+        - 'hole_effect_range' (float): hole effect range
+
+        - 'decay_power' (float): power parameter for power variogram
 
     Returns
     -------
     |np.ndarray[float]|
         A 1D array of length 3 containing:
-        - point estimate (float): the kriging predicted value at the target location,
-        - kriged variance (float): variance estimate associated with the kriging prediction,
-        - sample variance (float): coefficient of variation based variance estimate,
-          set to NaN if the point estimate is effectively zero to avoid division by zero.
+
+        - point estimate (float): the kriging predicted value at the target location
+
+        - kriged variance (float): variance estimate associated with the kriging prediction
+
+        - sample variance (float): coefficient of variation based variance estimate
+
+          set to NaN if the point estimate is effectively zero to avoid division by zero
 
     Notes
     -----
     - The function assumes ordinary kriging with an unbiasedness constraint.
+
     - The sample variance is computed as:
 
       .. math::
@@ -568,10 +605,10 @@ def kriging_point_estimator(
         }
 
       where :math:`\\hat{Z}` is the kriging estimate and :math:`Z` the observed variable values.
+
     - If the point estimate is zero or extremely close to zero, the sample variance is
       undefined and returned as NaN.
     """
-
     # Break up the stacked index
     outside_weight, composite_index, M2_vario, range_vals = parse_stacked_kriging_array(
         kriging_array, **kriging_parameters
@@ -621,14 +658,16 @@ def kriging_point_estimator(
 def ordinary_kriging(
     transects: pd.DataFrame,
     kriging_mesh: pd.DataFrame,
-    coordinate_names: Tuple[str, str],
+    coordinate_names: tuple[str, str],
     variable: str,
-    kriging_parameters: Dict[str, Any],
-    variogram_parameters: Dict[str, Any],
+    kriging_parameters: dict[str, Any],
+    variogram_parameters: dict[str, Any],
     adaptive_search_strategy: Callable = uniform_search_strategy,
 ) -> np.ndarray[float]:
-    """
-    Use ordinary kriging to interpolate georeferenced data onto a grid
+    r"""
+    Apply ordinary kriging for spatial interpolation.
+
+    Use ordinary kriging to interpolate georeferenced data onto a grid.
 
     Parameters
     ----------
@@ -644,20 +683,29 @@ def ordinary_kriging(
     kriging_parameters: dict
         Dictionary of kriging parameters, must contain keys:
 
-        - ``k_min (int)``: minimum number of neighbors,
-        - ``k_max (int)``: maximum number of neighbors,
-        - ``search_radius (float)``: radius to consider neighbors,
+        - ``k_min (int)``: minimum number of neighbors
+
+        - ``k_max (int)``: maximum number of neighbors
+
+        - ``search_radius (float)``: radius to consider neighbors
+
         - ``anisotropy (float)``: truncation threshold for singular values in SVD solver.
 
     variogram_parameters : Dict[str, Any]
         Dictionary describing the variogram model and parameters, such as:
 
-        - ``model`` (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
-        - ``nugget`` (float): nugget effect,
-        - ``sill`` (float): sill parameter,
-        - 'correlation_range' (float): range parameter,
-        - 'hole_effect_range' (float): hole effect range,
-        - 'decay_power' (float): power parameter for power variogram.
+        - ``model`` (str or list of str): variogram model names (e.g., 'bessel', 'exponential')
+
+        - ``nugget`` (float): nugget effect
+
+        - ``sill`` (float): sill parameter
+
+        - 'correlation_range' (float): range parameter
+
+        - 'hole_effect_range' (float): hole effect range
+
+        - 'decay_power' (float): power parameter for power variogram
+
     adaptive_search_strategy : Callable, \
         default = :func:`echopop.geostatistics.uniform_search_strategy`
         A `Callable` function that defaults to using a uniform search strategy where out-of-sample
@@ -707,8 +755,10 @@ def ordinary_kriging(
     -------
     A 1D array of the same length as ``transect_df`` containing:
 
-        - point estimate (``float``): the kriging predicted value at the target location,
-        - kriged variance (``float``): variance estimate associated with the kriging prediction,
+        - point estimate (``float``): the kriging predicted value at the target location
+
+        - kriged variance (``float``): variance estimate associated with the kriging prediction
+
         - sample variance (``float``): coefficient of variation based variance estimate,
           set to NaN if the point estimate is effectively zero to avoid division by zero.
 
@@ -718,7 +768,6 @@ def ordinary_kriging(
     points; otherwise, the local covariance matrix ay be underdetermined. If it is too large, local
     neighborhoods may approach global kriging, reducing local resolution.
     """
-
     # Generate the distance matrix for all mesh points relative to all transect coordinates
     distance_matrix, _ = lag_distance_matrix(
         coordinates_1=kriging_mesh, coordinates_2=transects, coordinate_names=coordinate_names
@@ -770,9 +819,11 @@ def project_kriging_results(
     kriging_mesh: pd.DataFrame,
     transects: pd.DataFrame,
     variable: str,
-    default_mesh_cell_area: Optional[float] = None,
-) -> Tuple[pd.DataFrame, float]:
+    default_mesh_cell_area: float | None = None,
+) -> tuple[pd.DataFrame, float]:
     """
+    Project kriged results.
+
     Project the kriged results over the defined mesh.
 
     Parameters
@@ -799,7 +850,6 @@ def project_kriging_results(
         estimates and variance, sample variance, and cell coefficient of variation (CV). The other
         value is the overall CV computed for the entire kriging mesh.
     """
-
     # Create copy
     mesh_results = kriging_mesh.copy()
 
@@ -858,7 +908,9 @@ def project_kriging_results(
 
 
 class Kriging:
-    """
+    r"""
+    Class for kriging spatially distributed data.
+
     Class for performing ordinary kriging to predict population values and other metrics at
     un-sampled locations defined by a mesh grid.
 
@@ -926,7 +978,9 @@ class Kriging:
         DataFrame must contain coordinate columns as specified in ``coordinate_names``.
 
         Optional columns include:
+
         - ``area`` (float): Cell areas in square nautical miles for projection calculations
+
         - ``fraction`` (float): Fraction of cell area if using default cell areas
 
     coordinate_names : Tuple[str, str], default=("x", "y")
@@ -938,8 +992,11 @@ class Kriging:
 
         - ``aspect_ratio (float)``: Ratio of minor to major axis correlation ranges for anisotropy
           handling. Values near 1 indicate isotropy, smaller values indicate directional elongation.
+
         - ``k_min (int)``: Minimum number of nearest neighbors for kriging (typically 3-8).
+
         - ``k_max (int)``: Maximum number of nearest neighbors for kriging (typically 8-20).
+
         - ``search_radius (float)``: Maximum distance for neighbor search in coordinate units.
 
     variogram_params : Dict[str, Any]
@@ -947,9 +1004,13 @@ class Kriging:
 
         - ``model`` (``str`` or ``List[str]``): Variogram model (e.g., ``'exponential'``,
           ``'gaussian'``, ``'spherical'``, or composite models like ``['bessel', 'exponential']``).
+
         - ``nugget`` (``float``): Nugget effect representing micro-scale variability.
+
         - ``sill`` (``float``): Total variance (nugget + partial sill).
+
         - ``correlation_range`` (``float``): Correlation length scale.
+
         - Additional parameters depending on model choice (e.g., ``hole_effect_range``,
           ``decay_power``).
 
@@ -1076,14 +1137,11 @@ class Kriging:
     def __new__(
         cls,
         mesh: pd.DataFrame,
-        kriging_params: Dict[str, Any],
-        variogram_params: Dict[str, Any],
-        coordinate_names: Tuple[str, str] = ("x", "y"),
+        kriging_params: dict[str, Any],
+        variogram_params: dict[str, Any],
+        coordinate_names: tuple[str, str] = ("x", "y"),
     ):
-        """
-        Create class object. If input validation fails, then the object will not be created.
-        """
-
+        """Create class object. If input validation fails, then the object will not be created."""
         # Validate
         try:
             # ---- Check
@@ -1114,9 +1172,9 @@ class Kriging:
     def __init__(
         self,
         mesh: pd.DataFrame,
-        kriging_params: Dict[str, Any],
-        variogram_params: Dict[str, Any],
-        coordinate_names: Tuple[str, str],
+        kriging_params: dict[str, Any],
+        variogram_params: dict[str, Any],
+        coordinate_names: tuple[str, str],
     ):
 
         # Initialize variables
@@ -1132,7 +1190,7 @@ class Kriging:
 
     @classmethod
     def register_search_strategy(cls, name: str, strategy: Callable) -> None:
-        """Register a custom search strategy function
+        """Register a custom search strategy function.
 
         Parameters
         ----------
@@ -1155,13 +1213,13 @@ class Kriging:
 
     @classmethod
     def list_search_strategies(cls) -> list[str]:
-        """List all available search strategies"""
+        """List all available search strategies."""
         return list(cls._search_strategies.keys())
 
     def crop_mesh(
         self,
         crop_function: Callable = cropping.hull_crop,
-        coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
+        coordinate_names: tuple[str, str] = ("longitude", "latitude"),
         **kwargs,
     ) -> None:
         """
@@ -1188,8 +1246,11 @@ class Kriging:
             Additional arguments passed to the cropping function. For ``hull_crop``:
 
             - ``'transects' (pandas.DataFrame)``: Survey transect data for boundary definition
+
             - ``'num_nearest_transects'(int)``: Number of neighbors for local hull creation
+
             - ``'mesh_buffer_distance' (float)``: Buffer distance in nautical miles
+
             - ``'projection' (str)``: EPSG code for coordinate system (e.g., ``'epsg:4326'``)
 
         Returns
@@ -1202,14 +1263,19 @@ class Kriging:
         The cropping process typically involves:
 
         1. **Boundary Definition**: Creating polygons around survey transects
+
         2. **Buffer Application**: Expanding boundaries to include nearby areas
+
         3. **Mesh Intersection**: Selecting mesh points within boundaries
+
         4. **Area Adjustment**: Updating cell areas for boundary cells if needed
 
         **Boundary Methods:**
 
         - **Convex Hull**: Simple, conservative boundary (default)
+
         - **Alpha Shapes**: More flexible boundaries for complex geometries
+
         - **Custom Polygons**: User-defined survey strata or management areas
 
         Examples
@@ -1234,7 +1300,6 @@ class Kriging:
         ...     boundary_polygon=survey_stratum
         ... )
         """
-
         # Get correct arguments
         args = inspect.signature(crop_function).parameters
 
@@ -1253,9 +1318,9 @@ class Kriging:
         transects: pd.DataFrame,
         variable: str,
         extrapolate: bool = True,
-        default_mesh_cell_area: Optional[float] = None,
+        default_mesh_cell_area: float | None = None,
         adaptive_search_strategy: str = "uniform",
-        custom_search_kwargs: Dict[str, Any] = {},
+        custom_search_kwargs: dict[str, Any] | None = None,
     ) -> pd.DataFrame:
         """
         Perform ordinary kriging interpolation and project results onto the mesh grid.
@@ -1305,9 +1370,13 @@ class Kriging:
             Kriged results with columns:
 
             - Original mesh columns (coordinates, area, etc.)
+
             - ``{variable}``: Column name associated ``variable``
+
             - ``'kriged_variance'``: Prediction variance from kriging equations
+
             - ``'sample_variance'``: Coefficient of variation based variance
+
             - ``'cell_cv'``: Cell-level coefficient of variation
 
         Raises
@@ -1324,22 +1393,30 @@ class Kriging:
         **Kriging Process:**
 
         1. **Neighbor Search**: Find :math:`k`-nearest neighbors within search radius
+
         2. **Covariance Matrix**: Build spatial covariance structure using variogram
+
         3. **Weight Calculation**: Solve kriging system with singular value decomposition (SVD)
            for stability
+
         4. **Prediction**: Compute weighted estimates and prediction variance
+
         5. **Projection**: Scale results by cell areas for survey totals
 
         **Variance Components:**
 
         - **Kriged Variance**: From kriging equations, measures prediction uncertainty
+
         - **Sample Variance**: CV-based measure incorporating data variability
+
         - **Survey CV**: Overall coefficient of variation for the entire survey
 
         **Quality Indicators:**
 
         - Negative predictions are truncated to zero with warnings
+
         - High kriged variance indicates uncertain predictions
+
         - Large survey CV suggests high spatial variability or poor model fit
 
         **Search Strategy Options:**
@@ -1347,7 +1424,9 @@ class Kriging:
         The adaptive search handles regions with insufficient neighbors:
 
         - **Interpolation**: ``k_min`` ≤ neighbors ≤ ``k_max`` within search radius
+
         - **Extrapolation**: < ``k_min`` neighbors, uses distance-weighted nearest points
+
         - **Full Extrapolation**: No neighbors within radius, uses ``k_min`` nearest
 
         Examples
@@ -1385,6 +1464,8 @@ class Kriging:
         ...     custom_search_kwargs={'threshold': 0.5}
         ... )
         """
+        # Apply mutable default guard
+        custom_search_kwargs = custom_search_kwargs or {}
 
         # Validate the required columns in ``transects``
         if not set(list(self.coordinate_names) + [variable]) <= set(transects.columns):

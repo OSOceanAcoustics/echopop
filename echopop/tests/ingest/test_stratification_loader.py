@@ -95,7 +95,7 @@ def test_join_strata_by_haul_dataframe(biological_data, strata_data):
 
     assert "stratum_num" in result.columns
 
-    for idx, row in result.iterrows():
+    for _idx, row in result.iterrows():
         if row["haul_num"] in strata_df["haul_num"].values:
             assert not pd.isna(row["stratum_num"])
 
@@ -109,20 +109,20 @@ def test_join_strata_by_haul_dictionary(biological_data, strata_data):
     assert isinstance(result, dict)
     assert set(result.keys()) == set(biological_data.keys())
 
-    for key, df in result.items():
+    for _key, df in result.items():
         if "haul_num" in df.columns:
             assert "stratum_num" in df.columns
 
 
 def test_join_geostrata_by_latitude_dataframe(mesh_data, geostrata_data):
     """Test joining geostrata to a single DataFrame."""
-    geostrata_df = geostrata_data["inpfc"].rename(
+    geostrata = geostrata_data["inpfc"].rename(
         columns={"latitude (upper limit)": "northlimit_latitude", "stratum": "stratum_num"}
     )
 
     df = mesh_data.rename(columns={"centroid_latitude": "latitude"})
 
-    result = join_geostrata_by_latitude(df, geostrata_df)
+    result = join_geostrata_by_latitude(df, geostrata)
 
     assert "stratum_num" in result.columns
     assert not result["stratum_num"].isna().any()

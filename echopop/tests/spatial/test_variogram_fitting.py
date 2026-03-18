@@ -28,8 +28,8 @@ def test_fit_variogram_basic(sample_simple_variogram_data, sample_simple_paramet
     assert "correlation_range" in fitted_params
 
     # Check that costs are numeric
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
     # Check that optimization improved the fit (lower cost)
     assert final_cost <= initial_cost
@@ -56,8 +56,8 @@ def test_fit_variogram_composite_model(sample_simple_variogram_data, sample_comp
     assert "correlation_range" in fitted_params
 
     # Check that costs are numeric
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_realistic_data(
@@ -82,8 +82,8 @@ def test_fit_variogram_realistic_data(
     assert "decay_power" in fitted_params
 
     # Check that costs are numeric
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
     # Check that optimization improved the fit (lower cost)
     assert final_cost <= initial_cost
@@ -108,8 +108,8 @@ def test_fit_variogram_single_models(sample_simple_variogram_data, sample_simple
 
         # Check that we get fitted parameters back
         assert isinstance(fitted_params, dict)
-        assert isinstance(initial_cost, (int, float))
-        assert isinstance(final_cost, (int, float))
+        assert isinstance(initial_cost, int | float)
+        assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_new_single_models(sample_simple_variogram_data, sample_simple_parameters):
@@ -134,8 +134,8 @@ def test_fit_variogram_new_single_models(sample_simple_variogram_data, sample_si
         assert "nugget" in fitted_params
         assert "sill" in fitted_params
         assert "correlation_range" in fitted_params
-        assert isinstance(initial_cost, (int, float))
-        assert isinstance(final_cost, (int, float))
+        assert isinstance(initial_cost, int | float)
+        assert isinstance(final_cost, int | float)
 
     # Test quadratic separately with required shape_parameter
     quadratic_params = Parameters()
@@ -156,8 +156,8 @@ def test_fit_variogram_new_single_models(sample_simple_variogram_data, sample_si
     assert "sill" in fitted_params
     assert "correlation_range" in fitted_params
     assert "shape_parameter" in fitted_params
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_matern_model():
@@ -189,8 +189,8 @@ def test_fit_variogram_matern_model():
     assert "sill" in fitted_params
     assert "correlation_range" in fitted_params
     assert "smoothness_parameter" in fitted_params
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_power_model():
@@ -220,8 +220,8 @@ def test_fit_variogram_power_model():
     assert "nugget" in fitted_params
     assert "sill" in fitted_params
     assert "power_exponent" in fitted_params
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_quadratic_model():
@@ -253,8 +253,8 @@ def test_fit_variogram_quadratic_model():
     assert "sill" in fitted_params
     assert "correlation_range" in fitted_params
     assert "shape_parameter" in fitted_params
-    assert isinstance(initial_cost, (int, float))
-    assert isinstance(final_cost, (int, float))
+    assert isinstance(initial_cost, int | float)
+    assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_parameter_validation_new_models():
@@ -309,8 +309,8 @@ def test_fit_variogram_parameter_validation_new_models():
             lags, lag_counts, gamma, params, [model_name], opt_params
         )
         assert isinstance(fitted_params, dict)
-        assert isinstance(initial_cost, (int, float))
-        assert isinstance(final_cost, (int, float))
+        assert isinstance(initial_cost, int | float)
+        assert isinstance(final_cost, int | float)
 
 
 def test_fit_variogram_optimization_convergence():

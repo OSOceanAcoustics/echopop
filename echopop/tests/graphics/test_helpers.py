@@ -11,6 +11,7 @@ from echopop.graphics.transect_map import get_transect_lines
 
 
 def test_interpolation_mesh_valid():
+    """Test that interpolation_mesh returns a DataArray for valid inputs."""
     x = pd.Series(np.linspace(0, 1, 10))
     y = pd.Series(np.linspace(0, 1, 10))
     z = pd.Series(np.random.rand(10))
@@ -20,6 +21,7 @@ def test_interpolation_mesh_valid():
 
 
 def test_get_transect_lines_valid():
+    """Test that get_transect_lines returns a GeoDataFrame of LineStrings."""
     gdf = gpd.GeoDataFrame(
         {"transect_num": [1, 1, 2, 2], "geometry": gpd.points_from_xy([0, 1, 2, 3], [0, 1, 2, 3])}
     )
@@ -30,6 +32,7 @@ def test_get_transect_lines_valid():
 
 
 def test_add_heatmap_grid_and_format():
+    """Test that add_heatmap_grid runs without error."""
     fig, ax = plt.subplots()
     age_labels = np.array([1, 2, 3])
     length_labels = np.array([10, 20, 30])
@@ -39,6 +42,7 @@ def test_add_heatmap_grid_and_format():
 
 
 def test_format_heatmap_mapping_valid():
+    """Test that format_heatmap_mapping returns correct output types."""
     fig, ax = plt.subplots()
     idx = pd.IntervalIndex.from_breaks([0, 1, 2, 3])
     cols = pd.IntervalIndex.from_breaks([10, 20, 30, 40])

@@ -378,7 +378,7 @@ def test_project_kriging_results_basic(sample_kriging_results, sample_projection
     # Check that first element is a DataFrame
     result_df, total_area = result
     assert isinstance(result_df, pd.DataFrame)
-    assert isinstance(total_area, (int, float, np.number))
+    assert isinstance(total_area, int | float | np.number)
 
 
 def test_project_kriging_results_values(sample_kriging_results, sample_projection_parameters):

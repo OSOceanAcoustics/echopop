@@ -1,5 +1,13 @@
+"""
+Transect map figures showing survey lines and associated NASC or biomass values.
+
+Plots geographic transect tracks as proportional-symbol or line maps, with configurable coastline
+and stratum boundary overlays via cartopy and matplotlib.
+"""
+
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -37,7 +45,6 @@ def get_transect_lines(
     them into a :class:`shapely.geometry.LineString` (`LineString docs
     <https://shapely.readthedocs.io/en/stable/manual.html#linestring>`_).
     """
-
     # Input validation and type-checking
     if not isinstance(data, gpd.GeoDataFrame):
         raise TypeError("Data must be a geopandas.GeoDataFrame.")
@@ -74,18 +81,18 @@ def get_transect_lines(
 
 
 def plot_transect_map(
-    data: Union[pd.DataFrame, gpd.GeoDataFrame],
+    data: pd.DataFrame | gpd.GeoDataFrame,
     variable: str,
     projection: str = "EPSG:4326",
-    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
-    scatter_kwargs: Optional[Dict[str, Any]] = None,
-    transect_kwargs: Optional[Dict[str, Any]] = None,
-    coast_kwargs: Optional[Dict[str, Any]] = None,
-    axis_kwargs: Optional[Dict[str, Any]] = None,
-    plot_kwargs: Optional[Dict[str, Any]] = None,
-    colorbar_kwargs: Optional[Dict[str, Any]] = None,
-    savepath: Optional[Path] = None,
-    savefig_kwargs: Optional[Dict[str, Any]] = None,
+    coordinate_names: tuple[str, str] = ("longitude", "latitude"),
+    scatter_kwargs: dict[str, Any] | None = None,
+    transect_kwargs: dict[str, Any] | None = None,
+    coast_kwargs: dict[str, Any] | None = None,
+    axis_kwargs: dict[str, Any] | None = None,
+    plot_kwargs: dict[str, Any] | None = None,
+    colorbar_kwargs: dict[str, Any] | None = None,
+    savepath: Path | None = None,
+    savefig_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """
     Plot survey transects and variable values on a map.
@@ -151,7 +158,6 @@ def plot_transect_map(
     plotting functions. If a keyword is present in both a specific kwargs dict and ``plot_kwargs``,
     the value in ``plot_kwargs`` takes precedence.
     """
-
     # Create copies
     scatter_kwargs = {} if scatter_kwargs is None else scatter_kwargs.copy()
     transect_kwargs = {} if transect_kwargs is None else transect_kwargs.copy()
@@ -162,7 +168,7 @@ def plot_transect_map(
     savefig_kwargs = {} if savefig_kwargs is None else savefig_kwargs.copy()
 
     # Input validation and type-checking
-    if not isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
+    if not isinstance(data, pd.DataFrame | gpd.GeoDataFrame):
         raise TypeError("Data must be a pandas.DataFrame or geopandas.GeoDataFrame.")
     if variable not in data.columns:
         raise KeyError(f"Input column '{variable}' missing from the input dataset.")
@@ -180,7 +186,7 @@ def plot_transect_map(
 
     # Get the coastline
     _, coast_clipped, _ = gutils.get_coastline(
-        gdf=data, projection=projection, coast_kwargs=coast_kwargs
+        geographic_data=data, projection=projection, coast_kwargs=coast_kwargs
     )
 
     # Subset the dataset to only include non-zero values
@@ -196,7 +202,7 @@ def plot_transect_map(
     # ---- Compute the total survey extent
     x0, y0, x1, y1 = [
         axis_kwargs.pop(pt, data.total_bounds[idx])
-        for pt, idx in zip(["x0", "y0", "x1", "y1"], [0, 1, 2, 3])
+        for pt, idx in zip(["x0", "y0", "x1", "y1"], [0, 1, 2, 3], strict=False)
     ]
 
     # Check for axis labels

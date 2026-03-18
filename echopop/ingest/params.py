@@ -1,20 +1,27 @@
+"""
+Geostatistical parameter ingestion for echopop.
+
+This module loads the combined variogram and kriging parameter workbook produced by the FEAT survey
+workflow and returns the parsed parameter values as a ``pandas.DataFrame``. These parameters are
+consumed directly by the ``Variogram`` and ``Kriging`` classes in the ``geostatistics`` sub-package.
+"""
+
 from pathlib import Path
-from typing import Dict, Tuple, Union
 
 import pandas as pd
 
 
 def load_kriging_variogram_params(
-    geostatistic_params_filepath: Union[str, Path],
+    geostatistic_params_filepath: Path,
     sheet_name: str,
-    column_name_map: Dict[str, str] = {},
-) -> Tuple[Dict, Dict]:
+    column_name_map: dict[str, str] | None = None,
+) -> tuple[dict, dict]:
     """
     Load kriging and variogram parameters from Excel file.
 
     Parameters
     ----------
-    geostatistic_params_filepath : str or pathlib.Path
+    geostatistic_params_filepath : pathlib.Path
         Path to the Excel file containing kriging parameters
     sheet_name : str
         Name of the sheet to load
@@ -26,7 +33,6 @@ def load_kriging_variogram_params(
     tuple
         Tuple containing kriging and variogram parameter dictionaries
     """
-
     if not geostatistic_params_filepath.exists():
         raise FileNotFoundError(
             f"Kriging parameter file not found: {geostatistic_params_filepath.as_posix()}"
@@ -40,6 +46,10 @@ def load_kriging_variogram_params(
     # Take the values from the first row and redefine them as the column headers
     df_initial.columns = df_initial.iloc[0]
     df_initial = df_initial.drop(0)
+
+    # Assign column renaming map if missing
+    if column_name_map is None:
+        column_name_map = {}
 
     # Extract kriging parameters
     kriging_params = (

@@ -52,7 +52,7 @@ def number_proportions_partition_dict():
         {
             "stratum_ks": [1, 1, 2, 2, 3, 3],
             "sex": ["female", "male", "female", "male", "female", "male"],
-            "proportion_overall": [0.3, 0.2, 0.35, 0.25, 0.28, 0.32],
+            "proportion": [0.3, 0.2, 0.35, 0.25, 0.28, 0.32],
         }
     ).set_index(["stratum_ks", "sex"])
 

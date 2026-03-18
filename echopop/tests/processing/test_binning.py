@@ -65,7 +65,7 @@ def test_interval_coverage(simple_bins):
     """Test that all original bins fall within created intervals."""
     result = echoutils.binned_distribution(simple_bins)
 
-    for i, (bin_val, interval) in result.iterrows():
+    for _i, (bin_val, interval) in result.iterrows():
         assert interval.left <= bin_val <= interval.right
 
 
@@ -176,7 +176,7 @@ def test_binify_mixed_objects_dict(mixed_objects_dict, numeric_bins):
 def test_binify_invalid_bins(target_dataframe):
     """Test error handling for invalid bins array."""
     invalid_bins = np.array([10])  # Single element
-    with pytest.raises(Exception):  # Will fail in binned_distribution
+    with pytest.raises(ValueError):
         echoutils.binify(target_dataframe, invalid_bins, "numeric_col")
 
 

@@ -1,5 +1,12 @@
+"""
+Age-length heatmap figures for biological proportion data.
+
+Generates 2-D heatmap plots that display the joint distribution of fish age and length across
+survey strata, using matplotlib for rendering and optional export.
+"""
+
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -42,7 +49,6 @@ def add_heatmap_grid(
     --------
     >>> add_heatmap_grid(ax, age_labels, delta_age, delta_length, length_labels)
     """
-
     # Input validation
     if not hasattr(ax, "hlines") or not hasattr(ax, "vlines"):
         raise TypeError("Axes object `ax` must be a matplotlib.axes.Axes instance.")
@@ -82,7 +88,7 @@ def add_heatmap_grid(
 
 def format_heatmap_mapping(
     ax: plt.Axes, data: pd.DataFrame
-) -> Tuple[List[float], float, float, pd.Series, pd.Series]:
+) -> tuple[list[float], float, float, pd.Series, pd.Series]:
     """
     Format axis ticks, labels, and extent for an age-length heatmap.
 
@@ -110,7 +116,6 @@ def format_heatmap_mapping(
     --------
     >>> extent, delta_age, delta_length, age_labels, length_labels = format_heatmap_mapping(ax, df)
     """
-
     # Input validation and type-checking
     if not hasattr(ax, "set_xticks") or not hasattr(ax, "set_yticks"):
         raise TypeError("Axes object `ax` must be a matplotlib.axes.Axes instance.")
@@ -167,15 +172,15 @@ def format_heatmap_mapping(
 
 def plot_age_length_heatmap(
     data: xr.DataArray,
-    include_filter: Dict[str, Any] = {},
-    exclude_filter: Dict[str, Any] = {},
+    include_filter: dict[str, Any] | None = None,
+    exclude_filter: dict[str, Any] | None = None,
     replace_value=None,
-    axis_kwargs: Optional[Dict[str, Any]] = None,
-    plot_kwargs: Optional[Dict[str, Any]] = None,
-    colorbar_kwargs: Optional[Dict[str, Any]] = None,
-    imshow_kwargs: Optional[Dict[str, Any]] = None,
-    savepath: Optional[Path] = None,
-    savefig_kwargs: Optional[Dict[str, Any]] = None,
+    axis_kwargs: dict[str, Any] | None = None,
+    plot_kwargs: dict[str, Any] | None = None,
+    colorbar_kwargs: dict[str, Any] | None = None,
+    imshow_kwargs: dict[str, Any] | None = None,
+    savepath: Path | None = None,
+    savefig_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """
     Plot an age-length heatmap from a DataFrame.

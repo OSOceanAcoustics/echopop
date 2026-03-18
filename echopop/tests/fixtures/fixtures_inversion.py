@@ -8,7 +8,7 @@ from echopop.inversion.pcdwba import pcdwba
 
 @pytest.fixture
 def model_parameters():
-    """Standard model parameters for InversionLengthTS."""
+    """Return standard model parameters for InversionLengthTS."""
     return {
         "ts_length_regression": {"slope": 20.0, "intercept": -68.0},
         "stratify_by": "stratum_ks",
@@ -38,7 +38,7 @@ def sample_lengths():
 
 @pytest.fixture
 def ts_regression_params():
-    """Standard TS regression parameters for Pacific hake."""
+    """Return standard TS regression parameters for Pacific hake."""
     return {"slope": 20.0, "intercept": -68.0}
 
 
@@ -130,13 +130,13 @@ def model_parameters_no_impute():
 
 @pytest.fixture
 def group_columns():
-    """Standard grouping columns for quantization."""
+    """Return standard grouping columns for quantization."""
     return ["stratum_ks", "haul_num", "sex"]
 
 
 @pytest.fixture
 def expected_ts_values():
-    """Expected TS values for sample lengths with standard parameters."""
+    """Return expected TS values for sample lengths with standard parameters."""
     # For lengths [10, 15, 20, 25, 30] with slope=20, intercept=-68
     # Calculate exact values: 20 * log10(length) + (-68)
     lengths = np.array([10.0, 15.0, 20.0, 25.0, 30.0])
@@ -193,7 +193,6 @@ def sample_InversionMatrix_parameters():
 @pytest.fixture
 def model_InversionMatrix_settings():
     """Model configuration settings."""
-
     return {
         "type": "pcdwba",
         "model_function": pcdwba,
@@ -221,8 +220,7 @@ def inv_parameters(sample_InversionMatrix_parameters):
 
 @pytest.fixture
 def inv_transect_info(inv_parameters):
-    """NASC coordinates"""
-
+    """NASC coordinates."""
     # Parameterize
     inv_parameters.simulate_parameter_sets(mc_realizations=5, rng=np.random.default_rng(123))
 
@@ -263,8 +261,7 @@ def inv_transect_info(inv_parameters):
 
 @pytest.fixture
 def inv_interval_info(inv_parameters):
-    """NASC coordinates"""
-
+    """NASC coordinates."""
     # Generate dataframe
     interval_nasc_df = (
         pd.DataFrame(
@@ -305,8 +302,7 @@ def inv_interval_info(inv_parameters):
 
 @pytest.fixture
 def inv_cells_info(inv_parameters):
-    """NASC coordinates"""
-
+    """NASC coordinates."""
     # Generate dataframe
     cells_nasc_df = (
         pd.DataFrame(

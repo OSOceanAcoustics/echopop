@@ -1,3 +1,13 @@
+"""
+Data ingestion sub-package for echopop.
+
+This sub-package handles loading and preprocessing of all external input files used in
+acoustic-trawl survey analysis: biological data (specimen, length, catch), NASC exports from
+Echoview, kriging mesh and isobath grids, haul and geographic stratification tables,
+variogram/kriging parameter files, and Sv CSV exports. Each module is responsible for a single data
+domain and returns clean, standardised ``pandas.DataFrame`` objects ready for downstream analysis.
+"""
+
 from . import nasc, sv
 from .biological import (
     apply_composite_key,

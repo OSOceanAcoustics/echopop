@@ -127,7 +127,7 @@ class InterlacedModuleDirective(SphinxDirective):
         module = importlib.import_module(module_path)
         output_nodes = []
 
-        for name, func in inspect.getmembers(module, inspect.isfunction):
+        for _name, func in inspect.getmembers(module, inspect.isfunction):
             # --- Render docstring via autodoc ---
             doc_nodes = FunctionDocumenter(
                 self.env, self.name, self.options, self.state, self.lineno

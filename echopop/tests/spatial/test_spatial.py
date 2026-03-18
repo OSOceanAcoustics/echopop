@@ -22,8 +22,8 @@ def test_transform_coordinates_basic(sample_coordinates_df):
     # Check that delta values are returned
     assert delta_x is not None
     assert delta_y is not None
-    assert isinstance(delta_x, (int, float))
-    assert isinstance(delta_y, (int, float))
+    assert isinstance(delta_x, int | float)
+    assert isinstance(delta_y, int | float)
 
     # Check that values are numeric
     assert result_df["x"].dtype in [np.float64, np.float32]

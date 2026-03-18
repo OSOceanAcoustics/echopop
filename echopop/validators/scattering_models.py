@@ -1,4 +1,4 @@
-# from __future__ import annotations
+"""Inherited validators for model-specific validators."""
 
 from ..inversion.pcdwba import pcdwba
 from .scattering import ValidatePCDWBAParams, ValidatePCDWBASettings

@@ -1,8 +1,4 @@
-"""
-This module corrects biological distributions based on length-based net selectivity.
-"""
-
-from typing import Dict, Tuple, Union
+"""Correct biological distributions based on length-based net selectivity."""
 
 import numpy as np
 import pandas as pd
@@ -11,13 +7,13 @@ from ..validators import ValidateSelectivityParams
 
 
 def get_l50_sr(
-    params: Dict[str, float],
-) -> Tuple[float, float]:
+    params: dict[str, float],
+) -> tuple[float, float]:
     """
         Validate and convert selectivity parameters to an (L50, SR) pair.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         params : dict
             A dictionary containing exactly one of the following parameter sets:
 
@@ -26,7 +22,7 @@ def get_l50_sr(
             - Selection parameters: ``{'l50', 'sr'}``
 
     Returns
-        -------
+    -------
         l50 : float
             The length at 50% retention.
         sr : float
@@ -49,11 +45,11 @@ def get_l50_sr(
 
 def assign_selectivity_expansion(
     biodata: pd.DataFrame,
-    net_selectivity_params: Union[Dict[str, float], Dict[str, Dict[str, float]]],
+    net_selectivity_params: dict[str, float] | dict[str, dict[str, float]],
     net_column: str,
     minimum_selectivity: float = 1e-12,
 ) -> pd.DataFrame:
-    """
+    r"""
     Compute per-fish logistic selectivity expansion factors and add them as a new column.
 
     The caller is responsible for ensuring ``biodata`` already contains both a length column and a
@@ -141,7 +137,6 @@ def assign_selectivity_expansion(
     methods of measuring the selectivity of towed fishing gears*. ICES Cooperative Research Report
     No. 215.
     """
-
     # Validate DataFrame columns
     if net_column not in biodata.columns:
         raise KeyError(f"Column '{net_column}' not found in 'biodata'.")

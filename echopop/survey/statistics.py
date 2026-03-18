@@ -1,4 +1,6 @@
-from typing import List, Literal, Union
+"""Bootstrap and confidence interval statistics for stratified survey estimates."""
+
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -47,7 +49,6 @@ def bc(
     Efron, B. (1981). Nonparametric standard errors and confidence intervals.
     *Canadian Journal of Statistics*, *9*(2), 139-158.
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)) or not np.isfinite(population_statistic):
         return np.full(len(interval), np.nan)
@@ -129,7 +130,6 @@ def bca(
         acceleration constant. *Computational Statistics & Data Analysis*, *9*(3), 271-281.
         https://doi.org/10.1016/0167-9473(90)90109-U
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)) or not np.isfinite(population_statistic):
         return np.full(len(interval), np.nan)
@@ -208,14 +208,13 @@ def empirical(
     Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian Journal
     of Statistics*, *9*(2), 139-158. https://doi.org/10.2307/3314608
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)) or not np.all(np.isfinite(population_statistic)):
         return np.full(len(interval), np.nan)
 
     # Adjust shape of 'population_statistic' if needed
     if len(population_statistic) == 1 and isinstance(
-        population_statistic, (pd.Series, pd.DataFrame)
+        population_statistic, pd.Series | pd.DataFrame
     ):
         population_statistic = population_statistic.to_numpy()
 
@@ -264,7 +263,6 @@ def normal(
     DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical Science*,
     *11*(3). https://doi.org/10.1214/ss/1032280214
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
@@ -308,7 +306,6 @@ def percentile(
     Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian Journal of
     Statistics*, *9*(2), 139-158. https://doi.org/10.2307/3314608
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
@@ -319,7 +316,7 @@ def percentile(
 
 def student_jackknife(
     samples: np.ndarray[float],
-    interval: List[float],
+    interval: list[float],
     **kwargs,
 ):
     """
@@ -354,7 +351,6 @@ def student_jackknife(
     DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals.
     *Statistical Science*, *11*(3), 189-228.
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
@@ -430,7 +426,6 @@ def student_standard(
     DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical Science*,
     *11*(3). https://doi.org/10.1214/ss/1032280214
     """
-
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
@@ -451,8 +446,8 @@ BOOTSTRAP_CI_METHODS = {
 
 
 def confidence_interval(
-    bootstrap_samples: Union[pd.Series, pd.DataFrame],
-    population_values: Union[pd.Series, pd.DataFrame],
+    bootstrap_samples: pd.Series | pd.DataFrame,
+    population_values: pd.Series | pd.DataFrame,
     ci_method: Literal[
         "bc",
         "bca",
@@ -558,9 +553,8 @@ def confidence_interval(
     .. [4] DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals.
         *Statistical Science*, 11(3), 189-228.
     """
-
     # Validate inputs
-    if not isinstance(population_values, (pd.DataFrame, pd.Series)):
+    if not isinstance(population_values, pd.DataFrame | pd.Series):
         raise TypeError("Input for population_values must be a pandas.Series or pandas.DataFrame.")
 
     if ci_method not in BOOTSTRAP_CI_METHODS:
@@ -576,7 +570,7 @@ def confidence_interval(
     bs_mean = bootstrap_samples.mean()
 
     # Get population mean
-    if isinstance(population_values, (pd.DataFrame, pd.Series)):
+    if isinstance(population_values, pd.DataFrame | pd.Series):
         pop_mean = population_values.mean()
     else:
         raise TypeError(
