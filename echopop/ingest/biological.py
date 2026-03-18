@@ -206,7 +206,7 @@ def load_biodata_db_views(
 
         # Add UID labels
         _ = {
-            k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
+            k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **(haul_uid_config or {}))
             for k, v in biodata_dict.items()
         }
 
