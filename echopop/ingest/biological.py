@@ -104,13 +104,13 @@ def load_single_biological_view(
 
 
 def load_biodata_db_views(
-    db_credentials: Dict[str, str],
-    biodata_table_map: Dict[str, str],
-    column_name_map: Dict[str, str] = None,
-    subset_dict: Optional[Dict] = None,
-    biodata_label_map: Optional[Dict[str, Dict]] = None,
-    haul_uid_config: Dict[str, Any] = {},
-) -> Dict[str, pd.DataFrame] | None:
+    db_credentials: dict[str, str],
+    biodata_table_map: dict[str, str],
+    column_name_map: dict[str, str] = None,
+    subset_dict: dict | None = None,
+    biodata_label_map: dict[str, dict] | None = None,
+    haul_uid_config: dict[str, Any] = {},
+) -> dict[str, pd.DataFrame] | None:
     """
     Load biological data from a postgres database.
 
