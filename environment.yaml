@@ -12,6 +12,7 @@ dependencies:
   - pandas
   - scipy
   - xarray>=2026.01.0
+  - sqlalchemy
   # Spatial stack
   - geopandas
   - geopy
