@@ -41,6 +41,13 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Set up cross-platform PostgreSQL
+      uses: ikalnytskyi/action-setup-postgres@v7
+      with:
+        username: test_user
+        password: postgres
+        database: test
+        port: 5432
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
