@@ -1309,13 +1309,13 @@ def get_number_proportions_slice(
     aggregate_array = number_proportions["proportion"].sum(
         dim=[d for d in number_proportions.coords if d not in [*stratum_dim_list, *index_set]]
     )
-    
+
     # Normalize the proportions
     nonstrata = [d for d in aggregate_array.coords if d not in stratum_dim_list]
-    strata_totals = aggregate_array.sum(dim = nonstrata)
+    strata_totals = aggregate_array.sum(dim=nonstrata)
     # ---- Re-weight
     aggregate_array_norm = aggregate_array / strata_totals
-    
+
     # Apply filters, if any
     if include_filter:
         # ---- Parse existing labels
