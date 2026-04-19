@@ -1310,19 +1310,25 @@ def get_number_proportions_slice(
         dim=[d for d in number_proportions.coords if d not in [*stratum_dim_list, *index_set]]
     )
 
+    # Normalize the proportions
+    nonstrata = [d for d in aggregate_array.coords if d not in stratum_dim_list]
+    strata_totals = aggregate_array.sum(dim=nonstrata)
+    # ---- Re-weight
+    aggregate_array_norm = aggregate_array / strata_totals
+
     # Apply filters, if any
     if include_filter:
         # ---- Parse existing labels
-        to_keep = {k: v for k, v in include_filter.items() if k in aggregate_array.coords}
+        to_keep = {k: v for k, v in include_filter.items() if k in aggregate_array_norm.coords}
         if to_keep:
-            aggregate_array = aggregate_array.sel(to_keep)
+            aggregate_array_norm = aggregate_array_norm.sel(to_keep)
     if exclude_filter:
         # ---- Parse existing labels
-        to_drop = {k: v for k, v in exclude_filter.items() if k in aggregate_array.coords}
+        to_drop = {k: v for k, v in exclude_filter.items() if k in aggregate_array_norm.coords}
         if to_drop:
-            aggregate_array = aggregate_array.drop_sel(to_drop)
+            aggregate_array_norm = aggregate_array_norm.drop_sel(to_drop)
     # ---- Drop any singleton coordinates
-    grouped_props = aggregate_array.squeeze(drop=True)
+    grouped_props = aggregate_array_norm.squeeze(drop=True)
 
     # Aggregate further over the defined strata
     return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in stratum_dim_list])
