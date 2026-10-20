@@ -1,7 +1,7 @@
 """
 General-purpose utility functions used across the echopop package.
 
-This module provides shared helpers for data filtering, binning, interpolation, pivot-table
+This module provides shared helpers for data filtering, interpolation, pivot-table
 construction, grouped-series creation, and haul UID construction. Functions here are intentionally
 domain-agnostic and are imported freely by ``ingest``, ``survey``, ``geostatistics``, and
 ``workflows`` sub-packages.
@@ -16,95 +16,6 @@ from scipy import interpolate as interp
 
 from ..core.validators import BaseDictionary
 from ..validators import ValidateHaulUID
-
-
-def binify(
-    data: pd.DataFrame | dict[str, pd.DataFrame],
-    bins: np.ndarray,
-    bin_column: str,
-) -> None:
-    """Add an ordered interval column to each DataFrame in place.
-
-    Parameters
-    ----------
-    data : pandas.DataFrame or dict of pandas.DataFrame
-        Frames to modify. Frames without ``bin_column`` and non-frame dictionary
-        entries are skipped.
-    bins : array-like
-        At least two finite, strictly increasing bin locations. Internal edges
-        are midpoints between consecutive locations, as in MATLAB ``hist``.
-        Uniformly spaced locations are the interval centers. For uneven spacing,
-        the interval centers generally differ from the supplied locations.
-    bin_column : str
-        Column to discretize. Adds ``<bin_column>_bin`` as ordered categorical
-        pandas intervals, preserving original columns and index.
-
-    Returns
-    -------
-    None
-        DataFrames are modified in place.
-
-    Warns
-    -----
-    UserWarning
-        If nonmissing input values fall outside the binning intervals. One warning
-        is emitted per affected DataFrame, reporting the column, count, and range.
-
-    Notes
-    -----
-    The first and last edges extend half the adjacent spacing beyond the first
-    and last locations. Intervals include their right boundary, but exclude their
-    left boundary. Missing and out-of-range values receive missing bin assignments;
-    rows are not removed. Unlike MATLAB ``hist``, outer bins are finite.
-
-    Examples
-    --------
-    >>> frame = pd.DataFrame({"length": [20, 30, 50, 100]})
-    >>> binify(frame, np.array([20, 30, 50]), "length")
-    >>> frame["length_bin"].cat.categories
-    IntervalIndex([(15.0, 25.0], (25.0, 40.0], (40.0, 60.0]], dtype='interval[float64, right]')
-    """
-    if isinstance(data, pd.DataFrame):
-        frames = (data,)
-    elif isinstance(data, dict):
-        frames = (frame for frame in data.values() if isinstance(frame, pd.DataFrame))
-    else:
-        raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")
-
-    bins = np.asarray(bins, dtype=float)
-    if (
-        bins.ndim != 1
-        or bins.size < 2
-        or not np.isfinite(bins).all()
-        or not (bins[1:] > bins[:-1]).all()
-    ):
-        raise ValueError(
-            "bins must be one-dimensional, finite, and strictly increasing, "
-            "with at least two values"
-        )
-
-    half_spacing = np.diff(bins) / 2.0
-    edges = np.concatenate(
-        [
-            [bins[0] - half_spacing[0]],
-            bins[:-1] + half_spacing,
-            [bins[-1] + half_spacing[-1]],
-        ]
-    )
-    intervals = pd.IntervalIndex.from_breaks(edges, closed="right")
-    for frame in frames:
-        if bin_column in frame.columns:
-            binned = pd.cut(frame[bin_column], bins=intervals)
-            out_of_range_count = int((frame[bin_column].notna() & binned.isna()).sum())
-            if out_of_range_count:
-                warnings.warn(
-                    f"{out_of_range_count} nonmissing value(s) in '{bin_column}' fall outside "
-                    f"the binning range ({edges[0]}, {edges[-1]}]; "
-                    "their bin assignments will be missing. Rows are retained.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-            frame[f"{bin_column}_bin"] = binned
 
 
 def _filter_rows(
