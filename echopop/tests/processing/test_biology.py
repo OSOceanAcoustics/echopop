@@ -482,7 +482,9 @@ def test_length_binned_weights_preserves_original_data(
     """Test that original data is not modified."""
     original_data = sample_specimen_data.copy()
 
-    length_binned_weights(sample_specimen_data, sample_length_bin_edges, single_regression_coefficients)
+    length_binned_weights(
+        sample_specimen_data, sample_length_bin_edges, single_regression_coefficients
+    )
 
     # Original data should be unchanged (function makes copy)
     pd.testing.assert_frame_equal(sample_specimen_data, original_data)
@@ -505,7 +507,9 @@ def test_length_binned_weights_deterministic_results(
 
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
-def test_length_binned_weights_realistic_coefficients(sample_specimen_data, sample_length_bin_edges):
+def test_length_binned_weights_realistic_coefficients(
+    sample_specimen_data, sample_length_bin_edges
+):
     """Test with realistic regression coefficients."""
     # Generate coefficients from actual data
     coeffs = fit_length_weight_regression(sample_specimen_data)

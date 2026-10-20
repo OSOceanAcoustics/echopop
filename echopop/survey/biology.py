@@ -5,7 +5,6 @@ import pandas as pd
 import xarray as xr
 
 
-
 def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:
     """
     Fit a log-linear length-weight regression to biological data.

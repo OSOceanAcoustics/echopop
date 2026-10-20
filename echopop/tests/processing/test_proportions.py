@@ -4,7 +4,6 @@ import pytest
 import xarray as xr
 from scipy import interpolate as interp
 
-from echopop import utils
 from echopop.survey import proportions as get_proportions
 
 
