@@ -551,10 +551,7 @@ def pivot_aged_weight_proportions(
 
     # Convert the interval indices to numerics
     age_weight_full.index = (
-        pd.Series(age_weight_full.index)
-        .apply(lambda x: x.mid)
-        .to_numpy()
-        .astype(int)
+        pd.Series(age_weight_full.index).apply(lambda x: x.mid).to_numpy().astype(int)
     )
 
     # Calculate proportions
